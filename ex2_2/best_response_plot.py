@@ -52,27 +52,41 @@ def br_regions(M):
     return regions
 
 
-def draw_panel(ax, M, own_labels, opp_labels, title, ne_points):
+def draw_panel(ax, M, own_labels, opp_labels, title, ne_points,
+               corners=CORNERS, axis_labels=None):
+    """Draw own best-response regions over the opponent's simplex.
+    corners: plot position of each opponent pure strategy (default: equilateral).
+    axis_labels: if given (e.g. for the right-triangle (p, q) plane), show the axes."""
     for i, poly in enumerate(br_regions(M)):
         if len(poly) < 3:
             continue
-        xy = np.array(poly) @ CORNERS
+        xy = np.array(poly) @ corners
         ax.fill(*xy.T, color=COLORS[i], alpha=0.55, lw=1.5, ec="black")
         cx, cy = xy.mean(axis=0)
         ax.text(cx, cy, own_labels[i], ha="center", va="center",
                 fontsize=16, fontweight="bold", color="white")
-    tri = np.vstack([CORNERS, CORNERS[:1]])
+    tri = np.vstack([corners, corners[:1]])
     ax.plot(*tri.T, color="black", lw=1.5)
-    offsets = [(-0.06, -0.05), (0.06, -0.05), (0, 0.05)]
-    for (x, y), (dx, dy), lab in zip(CORNERS, offsets, opp_labels):
-        ax.text(x + dx, y + dy, lab, ha="center", va="center", fontsize=13)
+    centre = corners.mean(axis=0)
+    for corner, lab in zip(corners, opp_labels):        # label just outside each corner
+        d = corner - centre
+        x, y = corner + 0.08 * d / np.linalg.norm(d)
+        ax.text(x, y, lab, ha="center", va="center", fontsize=13)
     for (label, p), marker in zip(ne_points, ["o", "s", "*"]):
-        px, py = np.asarray(p, float) @ CORNERS
+        px, py = np.asarray(p, float) @ corners
         ax.plot(px, py, marker, ms=13 if marker == "*" else 10,
                 mfc="yellow", mec="black", mew=1.5, label=label, zorder=5)
     ax.set_title(title, fontsize=12, pad=25)
     ax.set_aspect("equal")
-    ax.axis("off")
+    if axis_labels is None:
+        ax.axis("off")
+    else:
+        ax.set_xlabel(axis_labels[0]); ax.set_ylabel(axis_labels[1])
+        ax.set_xlim(-0.1, 1.1); ax.set_ylim(-0.1, 1.1)
+        ax.set_xticks(np.linspace(0, 1, 6)); ax.set_yticks(np.linspace(0, 1, 6))
+        ax.grid(alpha=0.3)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
 
 
 if __name__ == "__main__":
